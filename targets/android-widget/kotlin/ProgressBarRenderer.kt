@@ -15,7 +15,7 @@ import android.graphics.RectF
  */
 object ProgressBarRenderer {
     private const val W = 300
-    private const val H = 24
+    private const val H = 10 // ~30:1, close to the drawn 6dp bar so FillBounds barely distorts the corners
 
     fun render(fraction: Double, fillColor: Int, trackColor: Int, striped: Boolean, stripeColor: Int): Bitmap {
         val bmp = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888)

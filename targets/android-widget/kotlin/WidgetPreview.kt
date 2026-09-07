@@ -49,21 +49,6 @@ object WidgetPreview {
     private fun spacer(context: Context, h: Int): View =
         View(context).apply { layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, h)) }
 
-    private fun chip(context: Context, label: String, selected: Boolean, dark: Boolean): TextView {
-        val d = { v: Int -> dp(context, v) }
-        return text(
-            context, label, 10f,
-            if (selected) modeSelectedTextArgb(dark) else modeUnselectedTextArgb(dark),
-            bold = true,
-        ).apply {
-            setPadding(d(8), d(5), d(8), d(5))
-            background = GradientDrawable().apply {
-                cornerRadius = d(9).toFloat()
-                setColor(if (selected) modeSelectedBackgroundArgb(dark) else modeUnselectedBackgroundArgb(dark))
-            }
-        }
-    }
-
     /** Loading/placeholder state shown while the first fetch for a candidate is in flight. */
     fun message(context: Context, title: String, dark: Boolean): View {
         val root = card(context, cardBackgroundArgb(dark))
@@ -126,18 +111,14 @@ object WidgetPreview {
 
         root.addView(spacer(context, 6))
         val (powerValue, powerUnit) = splitValueUnit(lp.chargePower?.let { Format.fmtW(it) } ?: "–")
-        val powerRow = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
+        val powerRow = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         powerRow.addView(text(context, powerValue, 13f, primary, bold = true))
         powerRow.addView(text(context, " $powerUnit", 10f, secondary, bold = true))
-        root.addView(powerRow)
-
-        root.addView(spacer(context, 8))
-        val chipsRow = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
-        modes(lp).forEachIndexed { i, mode ->
-            if (i > 0) chipsRow.addView(View(context).apply { layoutParams = LinearLayout.LayoutParams(d(4), 1) })
-            chipsRow.addView(chip(context, modeChipLabel(context, lp, mode), mode == lp.mode, dark))
+        lp.mode?.let { mode ->
+            powerRow.addView(View(context).apply { layoutParams = LinearLayout.LayoutParams(0, 1, 1f) })
+            powerRow.addView(text(context, modeChipLabel(context, lp, mode), 11f, secondary, bold = true))
         }
-        root.addView(chipsRow)
+        root.addView(powerRow)
 
         return root
     }

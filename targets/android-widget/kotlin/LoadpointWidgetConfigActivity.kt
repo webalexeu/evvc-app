@@ -14,6 +14,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.state.updateAppWidgetState
 import io.evcc.android.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -24,7 +25,7 @@ import kotlinx.coroutines.withContext
  * Widget placement configuration: pick a server, then a loadpoint. Stores the
  * choice in the widget's per-instance config (read back by LoadpointWidget).
  * Tapping a loadpoint fetches its live data and shows a preview of the actual
- * widget (see WidgetPreview) before committing via the "Use this loadpoint"
+ * widget (see WidgetPreview) before committing via the "Use this charging point"
  * button, so placement is a pick-and-confirm flow rather than pick-and-commit.
  *
  * Uses classic Views (not Compose) so it needs no dependencies beyond Glance -
@@ -201,10 +202,12 @@ class LoadpointWidgetConfigActivity : Activity() {
     }
 
     private fun save(serverId: String, lpIndex: Int) {
-        // write synchronously (plain SharedPreferences) before the widget renders
-        WidgetConfig.save(this, appWidgetId, serverId, lpIndex)
         scope.launch {
             val glanceId = GlanceAppWidgetManager(applicationContext).getGlanceIdBy(appWidgetId)
+            updateAppWidgetState(applicationContext, glanceId) {
+                it[SERVER_KEY] = serverId
+                it[LP_KEY] = lpIndex
+            }
             LoadpointWidget().update(applicationContext, glanceId)
             setResult(
                 RESULT_OK,

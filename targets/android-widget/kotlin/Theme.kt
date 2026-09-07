@@ -37,24 +37,25 @@ private val textSecondaryNight = Color(0xB3FFFFFF) // 70% white
 val cardBackground: ColorProvider = ColorProvider(day = Color.White, night = widgetCardDark)
 val notConfiguredBackground: ColorProvider = ColorProvider(evccDarkGreen)
 
-// -- typography (point sizes mirror LoadpointViews.swift / Views.swift) --
+// -- typography (mirrors LoadpointViews.swift / Views.swift, snapped to the M3 type scale: nothing below 11sp) --
 
 val textPrimary: ColorProvider = ColorProvider(day = textPrimaryDay, night = Color.White)
 val textSecondary: ColorProvider = ColorProvider(day = textSecondaryDay, night = textSecondaryNight)
 
 val titleStyle = TextStyle(color = textPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-val subtle = TextStyle(color = textSecondary, fontSize = 11.sp)
+val subtle = TextStyle(color = textSecondary, fontSize = 12.sp)
 val metricStyle = TextStyle(color = textPrimary, fontSize = 30.sp, fontWeight = FontWeight.Bold)
 val metricUnitStyle = TextStyle(color = textSecondary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
 val powerStyle = TextStyle(color = textPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-val powerUnitStyle = TextStyle(color = textSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-val statusStyle = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold)
+val powerUnitStyle = TextStyle(color = textSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+val statusStyle = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Medium)
 val modeChipStyle = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold)
+val modeLabelStyle = TextStyle(color = textSecondary, fontSize = 12.sp, fontWeight = FontWeight.Medium)
 
 val messageTitleStyle = TextStyle(color = textPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-val messageBodyStyle = TextStyle(color = textSecondary, fontSize = 11.sp)
+val messageBodyStyle = TextStyle(color = textSecondary, fontSize = 12.sp)
 val notConfiguredTitleStyle = TextStyle(color = ColorProvider(onGreen), fontSize = 15.sp, fontWeight = FontWeight.Bold)
-val notConfiguredBodyStyle = TextStyle(color = ColorProvider(onGreenSoft), fontSize = 11.sp, fontWeight = FontWeight.Medium)
+val notConfiguredBodyStyle = TextStyle(color = ColorProvider(onGreenSoft), fontSize = 12.sp, fontWeight = FontWeight.Medium)
 
 // -- loadpoint status / mode chip colors --
 
@@ -96,10 +97,6 @@ val modeUnselectedText: ColorProvider = ColorProvider(day = modeTextLight, night
 // -- same colors as raw ARGB ints, for the plain-Views config-screen preview
 // (WidgetPreview.kt) - it can't use Glance's day/night ColorProvider directly. --
 
-private val modeBgLightArgb = modeBgLight.toArgb()
-private val modeBgDarkArgb = modeBgDark.toArgb()
-private val modeTextLightArgb = modeTextLight.toArgb()
-private val modeTextDarkArgb = modeTextDark.toArgb()
 private val widgetCardDarkArgb = widgetCardDark.toArgb()
 private val textPrimaryDayArgb = textPrimaryDay.toArgb()
 private val textSecondaryDayArgb = textSecondaryDay.toArgb()
@@ -115,7 +112,3 @@ fun statusColorArgb(active: Boolean, heating: Boolean, dark: Boolean): Int = whe
     else -> if (dark) evccDarkGreenArgb else evccDarkerGreenArgb
 }
 
-fun modeSelectedBackgroundArgb(dark: Boolean): Int = if (dark) Color.White.toArgb() else Color.Black.toArgb()
-fun modeSelectedTextArgb(dark: Boolean): Int = if (dark) Color.Black.toArgb() else Color.White.toArgb()
-fun modeUnselectedBackgroundArgb(dark: Boolean): Int = if (dark) modeBgDarkArgb else modeBgLightArgb
-fun modeUnselectedTextArgb(dark: Boolean): Int = if (dark) modeTextDarkArgb else modeTextLightArgb
