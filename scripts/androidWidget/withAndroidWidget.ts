@@ -154,17 +154,16 @@ const withWidgetManifest: ConfigPlugin = (config) =>
     return config;
   });
 
-// 2x2 square by default (like iOS systemSmall), horizontally resizable to a
-// wide variant with the mode selector (systemMedium). LoadpointWidget.kt
-// switches layout at its SizeMode.Responsive breakpoints (110 / 250dp wide).
+// Always one cell high; 4x1 (mode selector docked) by default, horizontally
+// shrinkable down to 1x1. LoadpointWidget.kt switches layout by width.
 const widgetInfoXml = `<?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:minWidth="110dp"
-    android:minHeight="110dp"
-    android:minResizeWidth="110dp"
-    android:minResizeHeight="110dp"
-    android:targetCellWidth="2"
-    android:targetCellHeight="2"
+    android:minWidth="250dp"
+    android:minHeight="40dp"
+    android:minResizeWidth="40dp"
+    android:minResizeHeight="40dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="1"
     android:updatePeriodMillis="1800000"
     android:resizeMode="horizontal"
     android:widgetCategory="home_screen"
@@ -183,68 +182,106 @@ const reloadIconVector = `<?xml version="1.0" encoding="utf-8"?>
 </vector>
 `;
 
-// Widget picker preview image: title / status / metric / power lines.
+// Widget picker preview image (4x1): name / status, SoC, power, docked mode buttons, bottom progress strip.
 const loadpointPreviewImageVector = `<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="140dp" android:height="140dp"
-    android:viewportWidth="140" android:viewportHeight="140">
-    <path android:fillColor="#1B1B1B" android:pathData="M0,0h140v140h-140z" />
-    <path android:fillColor="#FFFFFF" android:pathData="M16,18h70v12h-70z" />
-    <path android:fillColor="#0FDE41" android:pathData="M16,38h50v8h-50z" />
-    <path android:fillColor="#FFFFFF" android:pathData="M16,64h60v24h-60z" />
-    <path android:fillColor="#333333" android:pathData="M16,96h108v6h-108z" />
-    <path android:fillColor="#0FDE41" android:pathData="M16,96h60v6h-60z" />
-    <path android:fillColor="#FFFFFF" android:pathData="M16,112h40v12h-40z" />
-    <path android:fillColor="#B3FFFFFF" android:pathData="M94,114h30v9h-30z" />
+    android:width="300dp" android:height="70dp"
+    android:viewportWidth="300" android:viewportHeight="70">
+    <path android:fillColor="#1B1B1B" android:pathData="M0,0h300v70h-300z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M12,18h40v30h-40z" />
+    <path android:fillColor="#B3FFFFFF" android:pathData="M56,38h12v9h-12z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M80,20h70v10h-70z" />
+    <path android:fillColor="#0FDE41" android:pathData="M80,36h64v7h-64z" />
+    <path android:fillColor="#B3FFFFFF" android:pathData="M180,10h12v12h-12z" />
+    <path android:fillColor="#2C2C2E" android:pathData="M0,64h204v6h-204z" />
+    <path android:fillColor="#0FDE41" android:pathData="M0,64h126v6h-126z" />
+    <path android:fillColor="#1A1B2E" android:pathData="M204,0h96v70h-96z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M204,24h96v22h-96z" />
 </vector>
 `;
 
 // Static preview layout for the widget picker (Glance content only renders once placed).
+// 4x1: info area with the progress strip, three docked mode buttons (Smart selected).
+const previewButton = (label: string, selected: boolean) =>
+  `<TextView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
+        android:background="@color/widget_preview_${selected ? "dock_selected" : "dock"}" android:gravity="center"
+        android:text="@string/${label}" android:textColor="@color/widget_preview_${selected ? "dock_selected_text" : "dock_text"}" android:textSize="12sp"${selected ? ' android:textStyle="bold"' : ""} />`;
+const previewSeparator = `<ImageView android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/widget_preview_card" />`;
+
+// Light/dark palettes for the static picker preview, mirroring Theme.kt.
+const previewColors = (c: Record<string, string>) =>
+  `<?xml version="1.0" encoding="utf-8"?>\n<resources>\n${Object.entries(c)
+    .map(([k, v]) => `    <color name="widget_preview_${k}">${v}</color>`)
+    .join("\n")}\n</resources>\n`;
+const previewColorsLight = previewColors({
+  card: "#FFFFFF",
+  text: "#1C1C1E",
+  text_secondary: "#991C1C1E",
+  status: "#0BA631",
+  track: "#ECEEF0",
+  dock: "#F0F1F3",
+  dock_text: "#7C7D8A",
+  dock_selected: "#000000",
+  dock_selected_text: "#FFFFFF",
+});
+const previewColorsDark = previewColors({
+  card: "#1C1C1E",
+  text: "#FFFFFF",
+  text_secondary: "#B3FFFFFF",
+  status: "#0FDE41",
+  track: "#38383A",
+  dock: "#1A1B2E",
+  dock_text: "#9A9BAB",
+  dock_selected: "#FFFFFF",
+  dock_selected_text: "#000000",
+});
+
 const loadpointPreviewXml = `<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#1B1B1B"
-    android:padding="16dp">
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:gravity="center_vertical">
-        <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
-            android:text="@string/widget_loadpoint_name" android:textColor="#FFFFFF" android:textSize="14sp" android:textStyle="bold" />
-        <ImageView android:layout_width="15dp" android:layout_height="15dp"
-            android:src="@drawable/ic_reload" android:tint="#B3FFFFFF" />
-    </LinearLayout>
-    <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:gravity="center_vertical" android:paddingTop="3dp">
-        <ImageView android:layout_width="7dp" android:layout_height="7dp" android:background="@drawable/widget_preview_dot" />
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingStart="5dp"
-            android:text="@string/widget_lpstatus_charging" android:textColor="#0FDE41" android:textSize="11sp" />
-    </LinearLayout>
-    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" />
-    <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:gravity="bottom">
+    android:orientation="horizontal"
+    android:background="@drawable/widget_preview_card"
+    android:clipToOutline="true">
+  <FrameLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
+        android:orientation="horizontal" android:gravity="center_vertical"
+        android:paddingStart="12dp" android:paddingEnd="12dp" android:paddingTop="6dp" android:paddingBottom="12dp">
+      <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+          android:orientation="horizontal" android:gravity="bottom">
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="62" android:textColor="#FFFFFF" android:textSize="30sp" android:textStyle="bold" />
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingBottom="4dp"
-            android:text=" %" android:textColor="#B3FFFFFF" android:textSize="14sp" android:textStyle="bold" />
-    </LinearLayout>
-    <FrameLayout android:layout_width="match_parent" android:layout_height="6dp" android:layout_marginTop="6dp">
-        <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/widget_preview_track" />
-        <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="horizontal">
-            <ImageView android:layout_width="0dp" android:layout_weight="62" android:layout_height="match_parent" android:background="@drawable/widget_preview_fill" />
-            <ImageView android:layout_width="0dp" android:layout_weight="38" android:layout_height="match_parent" />
+            android:text="62" android:textColor="@color/widget_preview_text" android:textSize="36sp" android:textStyle="bold" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingBottom="6dp"
+            android:text=" %" android:textColor="@color/widget_preview_text_secondary" android:textSize="14sp" android:textStyle="bold" />
+      </LinearLayout>
+      <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="14dp"
+          android:paddingEnd="18dp" android:orientation="vertical">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:maxLines="1" android:ellipsize="end"
+            android:text="Garage" android:textColor="@color/widget_preview_text" android:textSize="14sp" android:textStyle="bold" />
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical" android:paddingTop="2dp">
+          <ImageView android:layout_width="7dp" android:layout_height="7dp" android:background="@drawable/widget_preview_dot" />
+          <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingStart="5dp" android:maxLines="1"
+              android:text="@string/widget_lpstatus_charging" android:textColor="@color/widget_preview_status" android:textSize="12sp" />
         </LinearLayout>
-    </FrameLayout>
-    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" />
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:gravity="bottom">
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="7.4" android:textColor="#FFFFFF" android:textSize="15sp" android:textStyle="bold" />
-        <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:paddingBottom="1dp"
-            android:text=" kW" android:textColor="#B3FFFFFF" android:textSize="12sp" android:textStyle="bold" />
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingBottom="1dp"
-            android:text="@string/widget_mode_smart" android:textColor="#B3FFFFFF" android:textSize="12sp" />
+      </LinearLayout>
     </LinearLayout>
+    <ImageView android:layout_width="15dp" android:layout_height="15dp" android:layout_gravity="top|end"
+        android:layout_marginTop="8dp" android:layout_marginEnd="10dp"
+        android:src="@drawable/ic_reload" android:tint="@color/widget_preview_text_secondary" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="6dp" android:layout_gravity="bottom"
+        android:orientation="horizontal" android:background="@color/widget_preview_track">
+      <ImageView android:layout_width="0dp" android:layout_weight="62" android:layout_height="match_parent" android:background="#0FDE41" />
+      <ImageView android:layout_width="0dp" android:layout_weight="38" android:layout_height="match_parent" />
+    </LinearLayout>
+  </FrameLayout>
+  <LinearLayout android:layout_width="96dp" android:layout_height="match_parent" android:orientation="vertical" android:background="@color/widget_preview_dock">
+    ${previewButton("widget_mode_off", false)}
+    ${previewSeparator}
+    ${previewButton("widget_mode_smart", true)}
+    ${previewSeparator}
+    ${previewButton("widget_mode_now", false)}
+  </LinearLayout>
 </LinearLayout>
 `;
 
@@ -396,9 +433,16 @@ const withWidgetFiles: ConfigPlugin = (config) =>
         "layout/loadpoint_widget_preview.xml": loadpointPreviewXml,
         "drawable/widget_preview_loadpoint.xml": loadpointPreviewImageVector,
         "drawable/ic_reload.xml": reloadIconVector,
-        "drawable/widget_preview_dot.xml": roundedShape("#0FDE41", "4dp"),
-        "drawable/widget_preview_track.xml": roundedShape("#33FFFFFF", "3dp"),
-        "drawable/widget_preview_fill.xml": roundedShape("#0FDE41", "3dp"),
+        "drawable/widget_preview_dot.xml": roundedShape(
+          "@color/widget_preview_status",
+          "4dp",
+        ),
+        "drawable/widget_preview_card.xml": roundedShape(
+          "@color/widget_preview_card",
+          "20dp",
+        ),
+        "values/colors_widget_preview.xml": previewColorsLight,
+        "values-night/colors_widget_preview.xml": previewColorsDark,
       };
       for (const [rel, content] of Object.entries(files)) {
         const target = path.join(res, rel);

@@ -86,7 +86,7 @@
       "useThisLoadpoint": "Use this charging point"
     },
     "loadpoint": {
-      "name": "Loadpoint",
+      "name": "Charging point",
       "description": "Loadpoint status and charge mode."
     },
     "name": {

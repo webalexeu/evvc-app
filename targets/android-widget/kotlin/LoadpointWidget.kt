@@ -13,6 +13,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.glance.ColorFilter
 import androidx.glance.GlanceId
@@ -39,7 +40,6 @@ import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.background
 import androidx.glance.currentState
 import androidx.glance.state.PreferencesGlanceStateDefinition
-import androidx.glance.color.isNightMode
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
@@ -64,33 +64,55 @@ private fun deepLinkAction(uri: String): Action = actionStartActivity(Intent(Int
  * LoadpointViews.swift's LoadpointCard. Per-instance server + loadpoint come
  * from LoadpointWidgetConfigActivity.
  *
- * Two sizes like iOS's systemSmall/systemMedium: the 2x2 square shows the
- * current mode as text next to the power, the wide variant adds a vertical
- * mode selector. Tapping the card opens the app on the configured loadpoint;
- * the reload button and mode buttons have their own clickable regions.
+ * Always one launcher cell high; the width decides how much is shown:
+ * 1x1/2x1 SoC + power, 3x1 adds name and status, 4x1 the mode selector
+ * docked into the card's right edge. Tapping the
+ * card opens the app on the configured loadpoint; the reload icon and the
+ * mode buttons have their own clickable regions.
  */
-// wide (mode selector) from this width on, else the square layout
-private val WIDE_MIN_WIDTH = 250.dp
-private val WIDE_CARD_HEIGHT = 160.dp // ≈ iOS systemMedium
+private enum class WidthClass { ONE, TWO, THREE, FOUR }
 
-// Smart-mode servers only (off/smart/now); legacy pv/minpv are not offered.
-// Mirrors Loadpoint.swift's `item()`: the same raw mode carries a device-class
-// label (off->Normal, now->Boost/On) for continuous heat pumps / switchable devices.
-val MODES = listOf("off", "smart", "now")
+// launcher cells run ~80-100dp wide; thresholds sit between the n-cell widths
+private fun widthClass(width: Dp): WidthClass = when {
+    width < 130.dp -> WidthClass.ONE
+    width < 220.dp -> WidthClass.TWO
+    width < 310.dp -> WidthClass.THREE
+    else -> WidthClass.FOUR
+}
 
+val DOCK_WIDTH_3 = 96.dp // vertical stack
+val DOCK_WIDTH_4 = 150.dp // 2x2 grid, "Min+Solar" must fit
+private val STRIP_HEIGHT = 6.dp
+private val CARD_RADIUS = 20.dp
+val MAX_CARD_HEIGHT = 84.dp
+
+// alwaysCharge exists since the smart-mode redesign; its presence tells
+// new servers (off/smart/now) from old ones (off/pv/minpv/now).
+// Mirrors Loadpoint.swift's `item()` / `modeList`.
+fun smartModeServer(lp: Loadpoint): Boolean = lp.alwaysCharge != null
+
+fun modes(lp: Loadpoint): List<String> = when {
+    smartModeServer(lp) -> listOf("off", "smart", "now")
+    lp.chargerFeatureSwitchDevice -> listOf("off", "pv", "now")
+    else -> listOf("off", "pv", "minpv", "now")
+}
+
+// the same raw mode carries a device-class label (off->Normal, now->Boost/On)
+// for continuous heat pumps / switchable devices, smart-mode servers only
 fun modeLabel(context: Context, lp: Loadpoint, mode: String): String {
-    if (mode == "off" && lp.chargerFeatureContinuous) return context.getString(R.string.widget_mode_normal)
-    if (mode == "now") {
-        if (lp.chargerFeatureContinuous) return context.getString(R.string.widget_mode_boost)
-        if (lp.chargerFeatureSwitchDevice) return context.getString(R.string.widget_mode_on)
+    if (smartModeServer(lp)) {
+        if (mode == "off" && lp.chargerFeatureContinuous) return context.getString(R.string.widget_mode_normal)
+        if (mode == "now") {
+            if (lp.chargerFeatureContinuous) return context.getString(R.string.widget_mode_boost)
+            if (lp.chargerFeatureSwitchDevice) return context.getString(R.string.widget_mode_on)
+        }
     }
     return when (mode) {
         "off" -> context.getString(R.string.widget_mode_off)
         "smart" -> context.getString(R.string.widget_mode_smart)
-        "now" -> context.getString(R.string.widget_mode_now)
-        // legacy servers: display only, not selectable
         "pv" -> context.getString(R.string.widget_mode_pv)
         "minpv" -> context.getString(R.string.widget_mode_minpv)
+        "now" -> context.getString(R.string.widget_mode_now)
         else -> mode
     }
 }
@@ -228,22 +250,17 @@ class LoadpointWidget : GlanceAppWidget() {
         val deepLink = resolved?.let { (serverId, lpIndex) ->
             "evcc://loadpoint?lp=${lpIndex + 1}" + (serverId?.let { "&server=$it" } ?: "")
         } ?: "evcc://loadpoint"
-        // Launcher cells are taller than wide; iOS cards are square (small) or
-        // 2:1 (medium). Cap the card height accordingly and center it in the cell.
+        // launcher cells vary in height; cap the card and center it in the cell
         val size = LocalSize.current
-        val wide = size.width >= WIDE_MIN_WIDTH
-        val cardHeight = minOf(size.height, if (wide) WIDE_CARD_HEIGHT else size.width)
         Box(modifier = GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(
-                modifier = GlanceModifier.fillMaxWidth().height(cardHeight)
+            Box(
+                modifier = GlanceModifier.fillMaxWidth().height(minOf(size.height, MAX_CARD_HEIGHT))
                     .background(if (notConfigured) notConfiguredBackground else cardBackground)
-                    .cornerRadius(20.dp)
-                    .clickable(deepLinkAction(deepLink))
-                    .padding(16.dp),
-                verticalAlignment = Alignment.Vertical.Top,
+                    .cornerRadius(CARD_RADIUS)
+                    .clickable(deepLinkAction(deepLink)),
             ) {
                 when (state) {
-                    is LoadpointState.Data -> LoadpointBody(context, state, wide)
+                    is LoadpointState.Data -> LoadpointBody(context, state, widthClass(size.width))
                     LoadpointState.NoData -> MessageBody(
                         context.getString(R.string.widget_noData_title),
                         context.getString(R.string.widget_noData_body),
@@ -252,131 +269,159 @@ class LoadpointWidget : GlanceAppWidget() {
                         context.getString(R.string.widget_unreachable_title),
                         context.getString(R.string.widget_unreachable_body),
                     )
-                    LoadpointState.NotConfigured -> NotConfiguredBody(context)
+                    LoadpointState.NotConfigured -> MessageBody(
+                        context.getString(R.string.widget_setup_title),
+                        context.getString(R.string.widget_setup_body),
+                        notConfigured = true,
+                    )
                 }
             }
         }
     }
 
     @Composable
-    private fun LoadpointBody(context: Context, state: LoadpointState.Data, wide: Boolean) {
-        if (wide) {
-            Row(modifier = GlanceModifier.fillMaxSize()) {
-                Column(modifier = GlanceModifier.defaultWeight().fillMaxHeight()) {
-                    LoadpointInfo(context, state, showMode = false)
-                }
-                Spacer(GlanceModifier.width(14.dp))
-                Column(modifier = GlanceModifier.width(116.dp).fillMaxHeight()) {
-                    ModeSelectorColumn(context, state)
-                }
-            }
-        } else {
-            Column(modifier = GlanceModifier.fillMaxSize()) {
-                LoadpointInfo(context, state, showMode = true)
-            }
-        }
-    }
-
-    // title / status / metric / power column (mirrors LoadpointCard's `left`);
-    // the square size shows the current mode as text next to the power.
-    @Composable
-    private fun ColumnScope.LoadpointInfo(context: Context, state: LoadpointState.Data, showMode: Boolean) {
+    private fun LoadpointBody(context: Context, state: LoadpointState.Data, w: WidthClass) {
         val lp = state.lp
-        val s = status(lp)
-        val m = metric(lp)
-        val heating = lp.chargerFeatureHeating
-
-        Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Vertical.CenterVertically) {
-            Text(title(context, lp), style = titleStyle, maxLines = 1, modifier = GlanceModifier.defaultWeight())
-            Spacer(GlanceModifier.width(8.dp))
-            Image(
-                provider = ImageProvider(R.drawable.ic_reload),
-                contentDescription = null,
-                colorFilter = ColorFilter.tint(textSecondary),
-                modifier = GlanceModifier.width(15.dp).height(15.dp).clickable(actionRunCallback<ReloadAction>()),
-            )
+        Row(modifier = GlanceModifier.fillMaxSize()) {
+            Box(modifier = GlanceModifier.defaultWeight().fillMaxHeight()) {
+                val pad = if (w == WidthClass.ONE) 6.dp else 12.dp
+                // symmetric: content centers on the card, the strip overlays the bottom padding
+                Box(modifier = GlanceModifier.fillMaxSize().padding(horizontal = pad, vertical = 6.dp)) {
+                    when (w) {
+                        WidthClass.ONE -> InfoCompact(lp, small = true)
+                        WidthClass.TWO -> InfoCompact(lp, small = false)
+                        else -> InfoWide(context, lp)
+                    }
+                }
+                if (w >= WidthClass.THREE) {
+                    Box(modifier = GlanceModifier.fillMaxSize().padding(top = 8.dp, end = 10.dp), contentAlignment = Alignment.TopEnd) {
+                        Image(
+                            provider = ImageProvider(R.drawable.ic_reload),
+                            contentDescription = null,
+                            colorFilter = ColorFilter.tint(textSecondary),
+                            modifier = GlanceModifier.width(15.dp).height(15.dp).clickable(actionRunCallback<ReloadAction>()),
+                        )
+                    }
+                }
+                // progress as a thin strip along the card's bottom edge; on 4x1 it ends at the mode dock
+                stripBitmap(lp)?.let { bitmap ->
+                    Box(modifier = GlanceModifier.fillMaxSize(), contentAlignment = Alignment.BottomStart) {
+                        Spacer(GlanceModifier.fillMaxWidth().height(STRIP_HEIGHT).background(barTrack))
+                        Image(
+                            provider = ImageProvider(bitmap),
+                            contentDescription = null,
+                            contentScale = ContentScale.FillBounds,
+                            modifier = GlanceModifier.fillMaxWidth().height(STRIP_HEIGHT),
+                        )
+                    }
+                }
+            }
+            if (w == WidthClass.FOUR) ModeDock(context, state)
         }
+    }
 
-        Row(modifier = GlanceModifier.padding(top = 3.dp), verticalAlignment = Alignment.Vertical.CenterVertically) {
-            Box(modifier = GlanceModifier.width(7.dp).height(7.dp).background(statusColor(s.active, heating)).cornerRadius(4.dp)) {}
-            Spacer(GlanceModifier.width(5.dp))
-            Text(statusLabel(context, s, heating), style = statusStyle.copy(color = statusColor(s.active, heating)), maxLines = 1)
-        }
-
-        Spacer(GlanceModifier.defaultWeight())
-
-        // Glance has no baseline alignment: bottom-align and lift the smaller
-        // text by the descent difference (≈0.24em for Roboto) to fake one.
-        Row(verticalAlignment = Alignment.Vertical.Bottom) {
-            Text(m.value, style = metricStyle, maxLines = 1)
-            Text(" ${m.unit}", style = metricUnitStyle, maxLines = 1, modifier = GlanceModifier.padding(bottom = 4.dp))
-        }
-
-        if (m.fill != null) {
-            Spacer(GlanceModifier.height(6.dp))
-            val dark = context.isNightMode
-            Image(
-                provider = ImageProvider(
-                    ProgressBarRenderer.render(
-                        fraction = m.fill,
-                        fillColor = barFillColor(lp.connected, heating),
-                        trackColor = barTrackColor(dark),
-                        striped = s.active,
-                        stripeColor = barStripeColor(heating),
-                    ),
-                ),
-                contentDescription = null,
-                contentScale = ContentScale.FillBounds,
-                modifier = GlanceModifier.fillMaxWidth().height(6.dp),
-            )
-        }
-
-        Spacer(GlanceModifier.defaultWeight())
-
-        val power = lp.chargePower?.let { Format.fmtW(it) } ?: "–"
-        val (powerValue, powerUnit) = splitValueUnit(power)
-        Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Vertical.Bottom) {
-            Text(powerValue, style = powerStyle, maxLines = 1)
-            Text(" $powerUnit", style = powerUnitStyle, maxLines = 1, modifier = GlanceModifier.padding(bottom = 1.dp))
-            if (showMode && lp.mode != null) {
-                Spacer(GlanceModifier.defaultWeight())
-                Text(modeChipLabel(context, lp, lp.mode), style = modeLabelStyle, maxLines = 1, modifier = GlanceModifier.padding(bottom = 1.dp))
+    // 1x1 / 2x1: SoC + power only, centered. Too tight for name or status text.
+    @Composable
+    private fun InfoCompact(lp: Loadpoint, small: Boolean) {
+        // Stacked in a Column the value's font padding leaves a big gap above
+        // the power. Instead both are centered independently and nudged apart
+        // by their padding, so the power sits right under the glyphs.
+        val power = lp.chargePower?.takeIf { it > 0 }?.let { Format.fmtW(it) }
+        Box(modifier = GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(modifier = GlanceModifier.padding(bottom = if (power == null) 0.dp else if (small) 18.dp else 22.dp)) {
+                MetricText(metric(lp), small = small)
+            }
+            if (power != null) {
+                Text(
+                    power,
+                    style = if (small) secondaryStyle else powerCompactLargeStyle,
+                    maxLines = 1,
+                    modifier = GlanceModifier.padding(top = if (small) 18.dp else 32.dp),
+                )
             }
         }
     }
 
-    // wide size: a vertical column of full-width buttons (mirrors modeSelector in LoadpointViews.swift)
+    // 3x1 and up: big SoC first, then name + status block. The status line
+    // carries the power ("7.1 kW, Charging…", only when non-zero).
     @Composable
-    private fun ColumnScope.ModeSelectorColumn(context: Context, state: LoadpointState.Data) {
-        MODES.forEachIndexed { i, mode ->
-            if (i > 0) Spacer(GlanceModifier.height(6.dp))
-            ModeChip(
-                context, lp = state.lp, mode = mode, serverId = state.serverId, lpIndex = state.lpIndex,
-                modifier = GlanceModifier.fillMaxWidth().defaultWeight(),
+    private fun InfoWide(context: Context, lp: Loadpoint) {
+        val s = status(lp)
+        val heating = lp.chargerFeatureHeating
+        val color = statusColor(s.active, heating)
+        val power = lp.chargePower?.takeIf { it > 0 }?.let { Format.fmtW(it) }
+        val line = listOfNotNull(power, statusLabel(context, s, heating)).joinToString(", ")
+        Row(modifier = GlanceModifier.fillMaxSize(), verticalAlignment = Alignment.Vertical.CenterVertically) {
+            MetricText(metric(lp))
+            Spacer(GlanceModifier.width(14.dp))
+            Column(modifier = GlanceModifier.defaultWeight().padding(end = 18.dp)) { // clear of the reload icon
+                Text(title(context, lp), style = titleStyle, maxLines = 1)
+                Row(modifier = GlanceModifier.padding(top = 2.dp), verticalAlignment = Alignment.Vertical.CenterVertically) {
+                    Box(modifier = GlanceModifier.width(7.dp).height(7.dp).background(color).cornerRadius(4.dp)) {}
+                    Spacer(GlanceModifier.width(5.dp))
+                    Text(line, style = statusStyle.copy(color = color), maxLines = 1)
+                }
+            }
+        }
+    }
+
+    // Glance has no baseline alignment: bottom-align and lift the unit by the
+    // descent difference (≈0.24em for Roboto) to fake one.
+    @Composable
+    private fun MetricText(m: Metric, small: Boolean = false) {
+        Row(verticalAlignment = Alignment.Vertical.Bottom) {
+            Text(m.value, style = if (small) metricSmallStyle else metricLargeStyle, maxLines = 1)
+            Text(
+                " ${m.unit}",
+                style = if (small) metricUnitSmallStyle else metricUnitStyle,
+                maxLines = 1,
+                modifier = GlanceModifier.padding(bottom = if (small) 3.dp else 6.dp),
             )
         }
     }
 
+    // Mode buttons docked flush into the card's right edge (the card's corner
+    // radius clips them): 3 modes stack vertically, the legacy 4 form a 2x2 grid.
     @Composable
-    private fun ModeChip(
-        context: Context,
-        lp: Loadpoint,
-        mode: String,
-        serverId: String,
-        lpIndex: Int,
-        modifier: GlanceModifier = GlanceModifier,
-    ) {
-        val selected = mode == lp.mode
+    private fun ModeDock(context: Context, state: LoadpointState.Data) {
+        val modes = modes(state.lp)
+        val grid = modes.size == 4
+        Column(
+            modifier = GlanceModifier.width(if (grid) DOCK_WIDTH_4 else DOCK_WIDTH_3).fillMaxHeight().background(modeUnselectedBackground),
+        ) {
+            if (grid) {
+                DockRow(context, state, modes.subList(0, 2))
+                Spacer(GlanceModifier.fillMaxWidth().height(1.dp).background(cardBackground))
+                DockRow(context, state, modes.subList(2, 4))
+            } else {
+                modes.forEachIndexed { i, mode ->
+                    if (i > 0) Spacer(GlanceModifier.fillMaxWidth().height(1.dp).background(cardBackground))
+                    DockButton(context, state, mode, GlanceModifier.fillMaxWidth().defaultWeight())
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun ColumnScope.DockRow(context: Context, state: LoadpointState.Data, modes: List<String>) {
+        Row(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
+            DockButton(context, state, modes[0], GlanceModifier.fillMaxHeight().defaultWeight())
+            Spacer(GlanceModifier.fillMaxHeight().width(1.dp).background(cardBackground))
+            DockButton(context, state, modes[1], GlanceModifier.fillMaxHeight().defaultWeight())
+        }
+    }
+
+    @Composable
+    private fun DockButton(context: Context, state: LoadpointState.Data, mode: String, modifier: GlanceModifier) {
+        val selected = mode == state.lp.mode
         Box(
             modifier = modifier
                 .background(if (selected) modeSelectedBackground else modeUnselectedBackground)
-                .cornerRadius(9.dp)
-                .padding(horizontal = 8.dp, vertical = 5.dp)
                 .clickable(
                     actionRunCallback<ModeAction>(
                         actionParametersOf(
-                            ModeAction.serverKey to serverId,
-                            ModeAction.lpKey to (lpIndex + 1), // API is 1-based
+                            ModeAction.serverKey to state.serverId,
+                            ModeAction.lpKey to (state.lpIndex + 1), // API is 1-based
                             ModeAction.modeKey to mode,
                         ),
                     ),
@@ -384,33 +429,22 @@ class LoadpointWidget : GlanceAppWidget() {
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = modeChipLabel(context, lp, mode),
-                style = modeChipStyle.copy(color = if (selected) modeSelectedText else modeUnselectedText),
+                text = modeChipLabel(context, state.lp, mode),
+                style = (if (selected) modeSelectedStyle else modeUnselectedStyle),
+                maxLines = 1,
             )
         }
     }
 
     @Composable
-    private fun MessageBody(title: String, message: String) {
+    private fun MessageBody(title: String, message: String, notConfigured: Boolean = false) {
         Column(
-            modifier = GlanceModifier.fillMaxSize(),
+            modifier = GlanceModifier.fillMaxSize().padding(horizontal = 12.dp),
             verticalAlignment = Alignment.Vertical.CenterVertically,
             horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
         ) {
-            Text(title, style = messageTitleStyle)
-            Text(message, style = messageBodyStyle)
-        }
-    }
-
-    @Composable
-    private fun NotConfiguredBody(context: Context) {
-        Column(
-            modifier = GlanceModifier.fillMaxSize(),
-            verticalAlignment = Alignment.Vertical.CenterVertically,
-            horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
-        ) {
-            Text(context.getString(R.string.widget_setup_title), style = notConfiguredTitleStyle)
-            Text(context.getString(R.string.widget_setup_body), style = notConfiguredBodyStyle)
+            Text(title, style = if (notConfigured) notConfiguredTitleStyle else titleStyle, maxLines = 1)
+            Text(message, style = if (notConfigured) notConfiguredBodyStyle else secondaryStyle, maxLines = 2)
         }
     }
 }

@@ -16,12 +16,10 @@ private val evccDarkerGreen = Color(0xFF0BA631)
 private val evccOrange = Color(0xFFFF9000)
 
 private val bsGrayMedium = Color(0xFF93949E)
-private val bsGrayDeep = Color(0xFF010322)
 
 private val widgetCardDark = Color(0xFF1C1C1E)
 private val onGreen = Color(0xFF0A2912)
 private val onGreenSoft = Color(0xFF0A3D18)
-private val progressTrackLight = Color(0xFFECEEF0)
 private val modeBgLight = Color(0xFFF0F1F3)
 private val modeBgDark = Color(0xFF1A1B2E)
 private val modeTextLight = Color(0xFF7C7D8A)
@@ -37,25 +35,22 @@ private val textSecondaryNight = Color(0xB3FFFFFF) // 70% white
 val cardBackground: ColorProvider = ColorProvider(day = Color.White, night = widgetCardDark)
 val notConfiguredBackground: ColorProvider = ColorProvider(evccDarkGreen)
 
-// -- typography (mirrors LoadpointViews.swift / Views.swift, snapped to the M3 type scale: nothing below 11sp) --
+// -- typography: four sizes only - 36 (value), 20 (1x1 value), 14 (title, unit), 12 (the rest) --
 
 val textPrimary: ColorProvider = ColorProvider(day = textPrimaryDay, night = Color.White)
 val textSecondary: ColorProvider = ColorProvider(day = textSecondaryDay, night = textSecondaryNight)
 
 val titleStyle = TextStyle(color = textPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-val subtle = TextStyle(color = textSecondary, fontSize = 12.sp)
-val metricStyle = TextStyle(color = textPrimary, fontSize = 30.sp, fontWeight = FontWeight.Bold)
 val metricUnitStyle = TextStyle(color = textSecondary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-val powerStyle = TextStyle(color = textPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-val powerUnitStyle = TextStyle(color = textSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-val statusStyle = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Medium)
-val modeChipStyle = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold)
-val modeLabelStyle = TextStyle(color = textSecondary, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+val metricSmallStyle = TextStyle(color = textPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold) // 1x1, "33.9 °C" must fit
+val metricLargeStyle = TextStyle(color = textPrimary, fontSize = 36.sp, fontWeight = FontWeight.Bold) // 2x1+, spans the name/status stack
+val metricUnitSmallStyle = TextStyle(color = textSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+val secondaryStyle = TextStyle(color = textSecondary, fontSize = 12.sp, fontWeight = FontWeight.Medium) // 1x1 power, message bodies
+val powerCompactLargeStyle = TextStyle(color = textSecondary, fontSize = 14.sp, fontWeight = FontWeight.Medium) // 2x1
+val statusStyle = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Medium)
 
-val messageTitleStyle = TextStyle(color = textPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-val messageBodyStyle = TextStyle(color = textSecondary, fontSize = 12.sp)
-val notConfiguredTitleStyle = TextStyle(color = ColorProvider(onGreen), fontSize = 15.sp, fontWeight = FontWeight.Bold)
-val notConfiguredBodyStyle = TextStyle(color = ColorProvider(onGreenSoft), fontSize = 12.sp, fontWeight = FontWeight.Medium)
+val notConfiguredTitleStyle = titleStyle.copy(color = ColorProvider(onGreen))
+val notConfiguredBodyStyle = secondaryStyle.copy(color = ColorProvider(onGreenSoft))
 
 // -- loadpoint status / mode chip colors --
 
@@ -66,16 +61,11 @@ fun statusColor(active: Boolean, heating: Boolean): ColorProvider = when {
     else -> ColorProvider(day = evccDarkerGreen, night = evccDarkGreen)
 }
 
-// progress bar fill/stripe/track as raw ARGB ints, rendered via ProgressBarRenderer
-// (Glance has no fractional-width modifier, so the bar is a small canvas bitmap
-// like the chart) - mirrors ProgressBar in LoadpointViews.swift.
+// progress strip fill as raw ARGB, rendered via ProgressBarRenderer
 private val evccDarkGreenArgb = evccDarkGreen.toArgb()
 private val evccDarkerGreenArgb = evccDarkerGreen.toArgb()
 private val evccOrangeArgb = evccOrange.toArgb()
-private val orangeStripeArgb = Color(0xFFCC7400).toArgb()
 private val bsGrayMediumArgb = bsGrayMedium.toArgb()
-private val progressTrackLightArgb = progressTrackLight.toArgb()
-private val bsGrayDeepArgb = bsGrayDeep.toArgb()
 
 fun barFillColor(connected: Boolean, heating: Boolean): Int = when {
     !connected -> bsGrayMediumArgb
@@ -83,9 +73,28 @@ fun barFillColor(connected: Boolean, heating: Boolean): Int = when {
     else -> evccDarkGreenArgb
 }
 
+private val orangeStripeArgb = Color(0xFFCC7400).toArgb()
 fun barStripeColor(heating: Boolean): Int = if (heating) orangeStripeArgb else evccDarkerGreenArgb
 
-fun barTrackColor(dark: Boolean): Int = if (dark) bsGrayDeepArgb else progressTrackLightArgb
+private val trackLight = Color(0xFFECEEF0)
+private val trackDark = Color(0xFF38383A)
+val barTrack: ColorProvider = ColorProvider(day = trackLight, night = trackDark)
+fun barTrackColorArgb(dark: Boolean): Int = (if (dark) trackDark else trackLight).toArgb()
+
+/**
+ * Bottom-edge strip fill (drawn over the themed track): progress when known,
+ * striped while charging/heating (like the web UI); a full striped bar when
+ * charging without a known progress. Null = no strip at all.
+ */
+fun stripBitmap(lp: Loadpoint): android.graphics.Bitmap? {
+    val heating = lp.chargerFeatureHeating
+    val active = status(lp).active
+    val fill = metric(lp).fill ?: if (active) 1.0 else return null
+    return ProgressBarRenderer.strip(
+        fill, barFillColor(lp.connected, heating),
+        stripeColor = if (active) barStripeColor(heating) else null,
+    )
+}
 
 // selected chip inverts against the card (like a filled/primary button); mirrors
 // AnyShapeStyle(.primary) in LoadpointViews.swift's modeSelector.
@@ -93,6 +102,8 @@ val modeSelectedBackground: ColorProvider = ColorProvider(day = Color.Black, nig
 val modeSelectedText: ColorProvider = ColorProvider(day = Color.White, night = Color.Black)
 val modeUnselectedBackground: ColorProvider = ColorProvider(day = modeBgLight, night = modeBgDark)
 val modeUnselectedText: ColorProvider = ColorProvider(day = modeTextLight, night = modeTextDark)
+val modeSelectedStyle = TextStyle(color = modeSelectedText, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+val modeUnselectedStyle = TextStyle(color = modeUnselectedText, fontSize = 12.sp, fontWeight = FontWeight.Medium)
 
 // -- same colors as raw ARGB ints, for the plain-Views config-screen preview
 // (WidgetPreview.kt) - it can't use Glance's day/night ColorProvider directly. --
@@ -105,6 +116,11 @@ private val textSecondaryNightArgb = textSecondaryNight.toArgb()
 fun cardBackgroundArgb(dark: Boolean): Int = if (dark) widgetCardDarkArgb else Color.White.toArgb()
 fun textPrimaryArgb(dark: Boolean): Int = if (dark) Color.White.toArgb() else textPrimaryDayArgb
 fun textSecondaryArgb(dark: Boolean): Int = if (dark) textSecondaryNightArgb else textSecondaryDayArgb
+
+fun modeSelectedBackgroundArgb(dark: Boolean): Int = (if (dark) Color.White else Color.Black).toArgb()
+fun modeSelectedTextArgb(dark: Boolean): Int = (if (dark) Color.Black else Color.White).toArgb()
+fun modeUnselectedBackgroundArgb(dark: Boolean): Int = (if (dark) modeBgDark else modeBgLight).toArgb()
+fun modeUnselectedTextArgb(dark: Boolean): Int = (if (dark) modeTextDark else modeTextLight).toArgb()
 
 fun statusColorArgb(active: Boolean, heating: Boolean, dark: Boolean): Int = when {
     !active -> bsGrayMediumArgb

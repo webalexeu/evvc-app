@@ -197,7 +197,8 @@ class LoadpointWidgetConfigActivity : Activity() {
 
     private fun showPreview(view: View) {
         previewContainer.removeAllViews()
-        previewContainer.addView(view)
+        // 4x1 card at MAX_CARD_HEIGHT, like the default placement
+        previewContainer.addView(view, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, dp(MAX_CARD_HEIGHT.value.toInt())))
         previewContainer.visibility = View.VISIBLE
     }
 

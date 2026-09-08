@@ -18,10 +18,10 @@ npx expo prebuild --platform android --clean
 npx expo run:android
 ```
 
-Long-press the home screen → Widgets → evcc → Loadpoint.
+Long-press the home screen → Widgets → evcc → Charging point.
 
 ## Gotchas
 
 - The Compose compiler plugin version must equal the Kotlin version React Native pins; the plugin reads it from `node_modules/react-native/gradle/libs.versions.toml`.
-- Two layouts via `SizeMode.Exact`: square card (mode as text) below 250 dp width, wide card (mode selector) above. The card is height-capped and centered because launcher cells are taller than iOS widgets. Horizontal resize only.
+- Always one cell high, four layouts by width via `SizeMode.Exact` (1x1/2x1 SoC+power, 3x1 +name and status, 4x1 +docked mode selector). Progress is a strip along the bottom edge. Horizontal resize only.
 - Server ids are list positions (see `widgetServerId` in `utils/widgetSync.ts`), so reordering servers in the app can point a widget at a different server.
