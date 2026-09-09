@@ -83,7 +83,8 @@
       "loading": "Lädt…",
       "loadingPreview": "Vorschau wird geladen…",
       "previewError": "Vorschau konnte nicht geladen werden",
-      "useThisLoadpoint": "Diesen Ladepunkt verwenden"
+      "useThisLoadpoint": "Diesen Ladepunkt verwenden",
+      "setupBody": "Tippen, um Server und Ladepunkt zu wählen."
     },
     "loadpoint": {
       "name": "Ladepunkt",

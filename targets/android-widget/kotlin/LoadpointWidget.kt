@@ -1,5 +1,6 @@
 package io.evcc.android.widget
 
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -53,6 +54,7 @@ import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.width
 import androidx.glance.text.Text
+import androidx.glance.text.TextAlign
 import io.evcc.android.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -206,6 +208,7 @@ class LoadpointWidget : GlanceAppWidget() {
         // the first frame, then reload inside the composition whenever the
         // state (config or refresh nonce) changes.
         val initialPrefs = getAppWidgetState<Preferences>(context, id)
+        val appWidgetId = GlanceAppWidgetManager(context).getAppWidgetId(id)
         val initial = load(context, initialPrefs)
         provideContent {
             val prefs = currentState<Preferences>()
@@ -213,7 +216,7 @@ class LoadpointWidget : GlanceAppWidget() {
             LaunchedEffect(prefs) {
                 if (prefs != initialPrefs) state = load(context, prefs)
             }
-            Content(context, state, prefs[LP_KEY]?.let { prefs[SERVER_KEY] to it })
+            Content(context, state, prefs[LP_KEY]?.let { prefs[SERVER_KEY] to it }, appWidgetId)
         }
     }
 
@@ -241,15 +244,21 @@ class LoadpointWidget : GlanceAppWidget() {
     }
 
     @Composable
-    private fun Content(context: Context, state: LoadpointState, resolved: Pair<String?, Int>?) {
+    private fun Content(context: Context, state: LoadpointState, resolved: Pair<String?, Int>?, appWidgetId: Int) {
         val notConfigured = state == LoadpointState.NotConfigured
         // mirrors LoadpointView.deepLink in LoadpointViews.swift: always the
         // configured loadpoint (even in noData/unreachable, so the user can go
         // fix things in-app). lp is 1-based like the web UI. A null serverId means the default server, so the
-        // query param is omitted. Unconfigured just opens the app.
-        val deepLink = resolved?.let { (serverId, lpIndex) ->
-            "evcc://loadpoint?lp=${lpIndex + 1}" + (serverId?.let { "&server=$it" } ?: "")
-        } ?: "evcc://loadpoint"
+        // query param is omitted. Unconfigured (e.g. the server was deleted in the app) reopens the picker.
+        val tap = if (notConfigured) {
+            actionStartActivity(
+                Intent(context, LoadpointWidgetConfigActivity::class.java)
+                    .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId),
+            )
+        } else {
+            val (serverId, lpIndex) = resolved!!
+            deepLinkAction("evcc://loadpoint?lp=${lpIndex + 1}" + (serverId?.let { "&server=$it" } ?: ""))
+        }
         // launcher cells vary in height; cap the card and center it in the cell
         val size = LocalSize.current
         Box(modifier = GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -257,21 +266,27 @@ class LoadpointWidget : GlanceAppWidget() {
                 modifier = GlanceModifier.fillMaxWidth().height(minOf(size.height, MAX_CARD_HEIGHT))
                     .background(if (notConfigured) notConfiguredBackground else cardBackground)
                     .cornerRadius(CARD_RADIUS)
-                    .clickable(deepLinkAction(deepLink)),
+                    .clickable(tap),
             ) {
+                val w = widthClass(size.width)
                 when (state) {
-                    is LoadpointState.Data -> LoadpointBody(context, state, widthClass(size.width))
+                    is LoadpointState.Data -> LoadpointBody(context, state, w)
                     LoadpointState.NoData -> MessageBody(
                         context.getString(R.string.widget_noData_title),
                         context.getString(R.string.widget_noData_body),
+                        w,
+                        reload = true,
                     )
                     LoadpointState.Unreachable -> MessageBody(
                         context.getString(R.string.widget_unreachable_title),
                         context.getString(R.string.widget_unreachable_body),
+                        w,
+                        reload = true,
                     )
                     LoadpointState.NotConfigured -> MessageBody(
                         context.getString(R.string.widget_setup_title),
-                        context.getString(R.string.widget_setup_body),
+                        context.getString(R.string.widget_androidConfig_setupBody),
+                        w,
                         notConfigured = true,
                     )
                 }
@@ -293,16 +308,7 @@ class LoadpointWidget : GlanceAppWidget() {
                         else -> InfoWide(context, lp)
                     }
                 }
-                if (w >= WidthClass.THREE) {
-                    Box(modifier = GlanceModifier.fillMaxSize().padding(top = 8.dp, end = 10.dp), contentAlignment = Alignment.TopEnd) {
-                        Image(
-                            provider = ImageProvider(R.drawable.ic_reload),
-                            contentDescription = null,
-                            colorFilter = ColorFilter.tint(textSecondary),
-                            modifier = GlanceModifier.width(15.dp).height(15.dp).clickable(actionRunCallback<ReloadAction>()),
-                        )
-                    }
-                }
+                if (w >= WidthClass.THREE) ReloadIcon()
                 // progress as a thin strip along the card's bottom edge; on 4x1 it ends at the mode dock
                 stripBitmap(lp)?.let { bitmap ->
                     Box(modifier = GlanceModifier.fillMaxSize(), contentAlignment = Alignment.BottomStart) {
@@ -354,8 +360,9 @@ class LoadpointWidget : GlanceAppWidget() {
         Row(modifier = GlanceModifier.fillMaxSize(), verticalAlignment = Alignment.Vertical.CenterVertically) {
             MetricText(metric(lp))
             Spacer(GlanceModifier.width(14.dp))
-            Column(modifier = GlanceModifier.defaultWeight().padding(end = 18.dp)) { // clear of the reload icon
-                Text(title(context, lp), style = titleStyle, maxLines = 1)
+            Column(modifier = GlanceModifier.defaultWeight()) {
+                // only the title can collide with the reload icon; the status line runs the full width
+                Text(title(context, lp), style = titleStyle, maxLines = 1, modifier = GlanceModifier.padding(end = 18.dp))
                 Row(modifier = GlanceModifier.padding(top = 2.dp), verticalAlignment = Alignment.Vertical.CenterVertically) {
                     Box(modifier = GlanceModifier.width(7.dp).height(7.dp).background(color).cornerRadius(4.dp)) {}
                     Spacer(GlanceModifier.width(5.dp))
@@ -437,15 +444,37 @@ class LoadpointWidget : GlanceAppWidget() {
     }
 
     @Composable
-    private fun MessageBody(title: String, message: String, notConfigured: Boolean = false) {
+    private fun ReloadIcon() {
+        Box(modifier = GlanceModifier.fillMaxSize().padding(top = 8.dp, end = 10.dp), contentAlignment = Alignment.TopEnd) {
+            Image(
+                provider = ImageProvider(R.drawable.ic_reload),
+                contentDescription = null,
+                colorFilter = ColorFilter.tint(textSecondary),
+                modifier = GlanceModifier.width(15.dp).height(15.dp).clickable(actionRunCallback<ReloadAction>()),
+            )
+        }
+    }
+
+    /** Centered title + body; 1x1 has room for the title only, so it may wrap instead. */
+    @Composable
+    private fun MessageBody(title: String, message: String, w: WidthClass, notConfigured: Boolean = false, reload: Boolean = false) {
+        val center = TextAlign.Center
         Column(
             modifier = GlanceModifier.fillMaxSize().padding(horizontal = 12.dp),
             verticalAlignment = Alignment.Vertical.CenterVertically,
             horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
         ) {
-            Text(title, style = if (notConfigured) notConfiguredTitleStyle else titleStyle, maxLines = 1)
-            Text(message, style = if (notConfigured) notConfiguredBodyStyle else secondaryStyle, maxLines = 2)
+            val titleOnly = w == WidthClass.ONE
+            Text(
+                title,
+                style = (if (notConfigured) notConfiguredTitleStyle else titleStyle).copy(textAlign = center),
+                maxLines = if (titleOnly) 2 else 1,
+            )
+            if (!titleOnly) {
+                Text(message, style = (if (notConfigured) notConfiguredBodyStyle else secondaryStyle).copy(textAlign = center), maxLines = 2)
+            }
         }
+        if (reload) ReloadIcon()
     }
 }
 

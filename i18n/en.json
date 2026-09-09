@@ -83,7 +83,8 @@
       "loading": "Loading…",
       "loadingPreview": "Loading preview…",
       "previewError": "Couldn't load a preview",
-      "useThisLoadpoint": "Use this charging point"
+      "useThisLoadpoint": "Use this charging point",
+      "setupBody": "Tap to choose a server and charging point."
     },
     "loadpoint": {
       "name": "Charging point",

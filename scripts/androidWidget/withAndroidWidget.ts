@@ -167,6 +167,7 @@ const widgetInfoXml = `<?xml version="1.0" encoding="utf-8"?>
     android:updatePeriodMillis="1800000"
     android:resizeMode="horizontal"
     android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable"
     android:configure="${PACKAGE}.${WIDGET_SUBDIR}.LoadpointWidgetConfigActivity"
     android:previewImage="@drawable/widget_preview_loadpoint"
     android:previewLayout="@layout/loadpoint_widget_preview" />

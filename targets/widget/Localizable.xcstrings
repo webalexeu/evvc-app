@@ -1224,7 +1224,7 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "On"
+            "value": "Päällä"
           }
         },
         "fr": {
@@ -1391,7 +1391,7 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Normal"
+            "value": "Tavallinen"
           }
         },
         "fr": {
@@ -1558,7 +1558,7 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Boost"
+            "value": "Tehostus"
           }
         },
         "fr": {

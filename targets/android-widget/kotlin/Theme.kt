@@ -21,9 +21,9 @@ private val widgetCardDark = Color(0xFF1C1C1E)
 private val onGreen = Color(0xFF0A2912)
 private val onGreenSoft = Color(0xFF0A3D18)
 private val modeBgLight = Color(0xFFF0F1F3)
-private val modeBgDark = Color(0xFF1A1B2E)
+private val modeBgDark = Color.Black
 private val modeTextLight = Color(0xFF7C7D8A)
-private val modeTextDark = Color(0xFF9A9BAB)
+private val modeTextDark = Color(0xFF9A9A9A)
 
 // approximates SwiftUI's semantic .primary / .secondary on each background
 private val textPrimaryDay = Color(0xFF1C1C1E)
