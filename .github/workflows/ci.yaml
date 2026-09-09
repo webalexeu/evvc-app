@@ -77,7 +77,8 @@ jobs:
         run: npx expo install
 
       - name: Prebuild iOS
-        run: npx expo prebuild --platform ios --clean
+        # expo prebuild exits 0 even when pod install fails
+        run: npx expo prebuild --platform ios --clean && test -d ios/evcc.xcworkspace
 
       - name: Build Detox framework cache
         run: npx detox build-framework-cache
