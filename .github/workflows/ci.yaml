@@ -79,6 +79,9 @@ jobs:
       - name: Prebuild iOS
         # expo prebuild exits 0 even when pod install fails
         run: npx expo prebuild --platform ios --clean && test -d ios/evcc.xcworkspace
+        env:
+          # repo1.maven.org intermittently 404s the Hermes tarballs; Google's Maven Central mirror has them
+          ENTERPRISE_REPOSITORY: https://maven-central.storage-download.googleapis.com/maven2
 
       - name: Build Detox framework cache
         run: npx detox build-framework-cache
