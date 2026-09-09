@@ -275,7 +275,7 @@ jobs:
       - name: Install system dependencies for android emulator
         run: |
           # preinstalled Chrome repo occasionally serves a stale index (Hash Sum mismatch)
-          sudo rm -f /etc/apt/sources.list.d/google-chrome.list
+          sudo grep -l dl.google.com /etc/apt/sources.list.d/* | xargs -r sudo rm -f
           sudo apt-get update
           sudo apt-get install -y libpulse0
 
