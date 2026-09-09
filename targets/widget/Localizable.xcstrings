@@ -1224,7 +1224,7 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "On"
+            "value": "Päällä"
           }
         },
         "fr": {
@@ -1391,7 +1391,7 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Normal"
+            "value": "Tavallinen"
           }
         },
         "fr": {
@@ -1558,7 +1558,7 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Boost"
+            "value": "Tehostus"
           }
         },
         "fr": {
@@ -5184,25 +5184,25 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         },
         "bs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         },
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         },
         "da": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         },
         "de": {
@@ -5214,133 +5214,133 @@
         "el": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         },
         "et": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         },
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         },
         "hr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         },
         "hu": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         },
         "lb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         },
         "lt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         },
         "nb-NO": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         },
         "sl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         },
         "ta": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loadpoint"
+            "value": "Charging point"
           }
         }
       }

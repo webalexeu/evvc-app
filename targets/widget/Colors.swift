@@ -25,7 +25,7 @@ extension Color {
   static let onGreenSoft = Color(hex: 0x0A3D18)      // softer ink on bright green
   static let progressTrackLight = Color(hex: 0xECEEF0)
   static let modeBgLight = Color(hex: 0xF0F1F3)      // mode button (unselected, light)
-  static let modeBgDark = Color(hex: 0x1A1B2E)       // mode button (unselected, dark)
+  static let modeBgDark = Color.black                // mode button (unselected, dark)
   static let modeTextLight = Color(hex: 0x7C7D8A)
-  static let modeTextDark = Color(hex: 0x9A9BAB)
+  static let modeTextDark = Color(hex: 0x9A9A9A)
 }

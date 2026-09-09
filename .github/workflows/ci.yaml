@@ -77,7 +77,11 @@ jobs:
         run: npx expo install
 
       - name: Prebuild iOS
-        run: npx expo prebuild --platform ios --clean
+        # expo prebuild exits 0 even when pod install fails
+        run: npx expo prebuild --platform ios --clean && test -d ios/evcc.xcworkspace
+        env:
+          # repo1.maven.org intermittently 404s the Hermes tarballs; Google's Maven Central mirror has them
+          ENTERPRISE_REPOSITORY: https://maven-central.storage-download.googleapis.com/maven2
 
       - name: Build Detox framework cache
         run: npx detox build-framework-cache
@@ -270,6 +274,8 @@ jobs:
 
       - name: Install system dependencies for android emulator
         run: |
+          # preinstalled Chrome repo occasionally serves a stale index (Hash Sum mismatch)
+          sudo grep -l dl.google.com /etc/apt/sources.list.d/* | xargs -r sudo rm -f
           sudo apt-get update
           sudo apt-get install -y libpulse0
 

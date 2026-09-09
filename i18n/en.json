@@ -75,8 +75,19 @@
       "server": "Server",
       "loadpoint": "Loadpoint"
     },
+    "androidConfig": {
+      "chooseServer": "Choose server",
+      "chooseLoadpoint": "Choose charging point",
+      "noServers": "No servers. Add one in the app first.",
+      "noLoadpoints": "No charging points reachable",
+      "loading": "Loading…",
+      "loadingPreview": "Loading preview…",
+      "previewError": "Couldn't load a preview",
+      "useThisLoadpoint": "Use this charging point",
+      "setupBody": "Tap to choose a server and charging point."
+    },
     "loadpoint": {
-      "name": "Loadpoint",
+      "name": "Charging point",
       "description": "Loadpoint status and charge mode."
     },
     "name": {
