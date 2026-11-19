@@ -21,6 +21,8 @@ android {
   }
 }
 
+useDefaultAndroidSdkVersions()
+
 dependencies {
   // Data Layer API: send the synced server list to the paired watch.
   implementation "com.google.android.gms:play-services-wearable:19.0.0"
