@@ -42,7 +42,10 @@ const WEAR = {
   minSdk: 33,
   tiles: "1.4.1",
   protolayout: "1.2.1",
-  composeWear: "1.7.1", // 1.5.0+ for androidx.wear.compose.foundation.pager (HorizontalPager/rememberPagerState)
+  // 1.5.0+ for androidx.wear.compose.foundation.pager (HorizontalPager/rememberPagerState).
+  // 1.7.x's AARs require compileSdk 37 + AGP 9.1+ (we're pinned to AGP 8.12.0/compileSdk 36
+  // via react-native's own libs.versions.toml) - stay on the last 1.6.x release.
+  composeWear: "1.6.2",
   composeFoundation: "1.9.1",
   activityCompose: "1.9.3",
   lifecycleCompose: "2.8.7",
