@@ -5,6 +5,9 @@ interface WatchSyncModule {
 }
 
 const WatchSync = requireOptionalNativeModule<WatchSyncModule>("WatchSync");
+if (!WatchSync) {
+  console.warn("WatchSync native module not found - watch sync disabled");
+}
 
 /**
  * Hands the server list (JSON, same shape as the widget's) to the paired Wear

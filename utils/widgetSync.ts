@@ -105,8 +105,8 @@ function syncAndroidWidgetServers(
   const widgetServers = servers.map(toWidgetServer);
   try {
     syncWatchServers(JSON.stringify(widgetServers), activeServerId);
-  } catch {
-    // watch sync is non-critical
+  } catch (e) {
+    console.warn("watch sync failed (non-critical)", e);
   }
   try {
     const payload = {
