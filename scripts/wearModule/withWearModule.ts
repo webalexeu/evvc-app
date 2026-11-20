@@ -31,6 +31,7 @@ import path from "path";
  */
 
 const KOTLIN_SRC = "targets/wear/kotlin";
+const ICON_SRC = "targets/wear/icon"; // mipmap-*/ic_launcher[_round].png, generated from assets/adaptive-icon.png
 const WEAR_PACKAGE = "io.evcc.wear";
 const WEAR_DIR = "android/wear"; // gitignored like android/, regenerated
 const XCSTRINGS = "targets/widget/Localizable.xcstrings"; // shared mode/status labels (#255) + wear.* (this app)
@@ -127,9 +128,10 @@ const manifest = `<?xml version="1.0" encoding="utf-8"?>
     <application
         android:name=".WearApplication"
         android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/wear_app_name"
         android:theme="@android:style/Theme.DeviceDefault">
-        <!-- TODO: custom launcher icon (targets/wear/PLAN.md); uses the OS default until then. -->
 
         <!-- Runs without the phone app installed: standalone, same as the iOS watch app. -->
         <meta-data android:name="com.google.android.wearable.standalone" android:value="true" />
@@ -335,6 +337,18 @@ const withWearProject: ConfigPlugin = (config) =>
         path.join(drawableDir, "tile_preview.xml"),
         tilePreviewXml,
       );
+
+      const iconSrcDir = path.join(root, ICON_SRC);
+      for (const bucket of fs.readdirSync(iconSrcDir)) {
+        const bucketOut = path.join(main, "res", bucket);
+        fs.mkdirSync(bucketOut, { recursive: true });
+        for (const f of fs.readdirSync(path.join(iconSrcDir, bucket))) {
+          fs.copyFileSync(
+            path.join(iconSrcDir, bucket, f),
+            path.join(bucketOut, f),
+          );
+        }
+      }
 
       const { translations, locales } = loadTranslations(root);
       writeStrings(path.join(main, "res"), translations, locales);

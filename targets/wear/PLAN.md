@@ -128,6 +128,7 @@ of it straight out of the catalog, like the widget plugin does.
     LoadpointTileService.kt / LoadpointTileLayout.kt
     WearApplication.kt
   src/main/res/values*/strings.xml   generated from the widget's xcstrings + i18n/*.json "wear" keys
+  src/main/res/mipmap-*/ic_launcher*.png   copied from targets/wear/icon/ (prebuilt from assets/adaptive-icon.png)
 ```
 
 ## Open TODOs
@@ -139,8 +140,9 @@ of it straight out of the catalog, like the widget plugin does.
       library signatures from memory, not compiled.
 - [ ] Verify the Data Layer sync round-trip against a real paired phone +
       watch (emulator pairing works for this).
-- [ ] Custom launcher icon and tile preview artwork (uses the OS default
-      icon for now).
+- [ ] Tile preview artwork (still a plain navy rectangle placeholder;
+      launcher icon is done - `targets/wear/icon/`, generated from
+      `assets/adaptive-icon.png` over the adaptive icon's background color).
 - [ ] Per-instance tile configuration (server + loadpoint picker), and a
       direct mode-switch action on the tile itself (see "Cut from v1").
 - [ ] Embed `:wear` into the phone app's AAB so Play installs it onto a
