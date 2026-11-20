@@ -141,8 +141,8 @@ of it straight out of the catalog, like the widget plugin does.
 - [ ] Verify the Data Layer sync round-trip against a real paired phone +
       watch (emulator pairing works for this).
 - [ ] Tile preview artwork (still a plain navy rectangle placeholder;
-      launcher icon is done - `targets/wear/icon/`, generated from
-      `assets/adaptive-icon.png` over the adaptive icon's background color).
+      launcher icon is done - `targets/wear/icon/`, resized from the same
+      `assets/icon-light.png` the rest of the app uses).
 - [ ] Per-instance tile configuration (server + loadpoint picker), and a
       direct mode-switch action on the tile itself (see "Cut from v1").
 - [ ] Embed `:wear` into the phone app's AAB so Play installs it onto a

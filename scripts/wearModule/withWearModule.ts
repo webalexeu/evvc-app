@@ -31,7 +31,7 @@ import path from "path";
  */
 
 const KOTLIN_SRC = "targets/wear/kotlin";
-const ICON_SRC = "targets/wear/icon"; // mipmap-*/ic_launcher[_round].png, generated from assets/adaptive-icon.png
+const ICON_SRC = "targets/wear/icon"; // mipmap-*/ic_launcher[_round].png, resized from assets/icon-light.png
 const WEAR_PACKAGE = "io.evcc.wear";
 const WEAR_DIR = "android/wear"; // gitignored like android/, regenerated
 const XCSTRINGS = "targets/widget/Localizable.xcstrings"; // shared mode/status labels (#255) + wear.* (this app)
