@@ -61,7 +61,7 @@ data class Loadpoint(
 
 /** Disabled loadpoints are bare placeholders in the API (evcc-io/app#349);
  *  offsets stay the real .loadpoints[] index used for mode-switch POSTs. */
-fun List<IndexedValue<Loadpoint>>.active(): List<IndexedValue<Loadpoint>> =
+fun Iterable<IndexedValue<Loadpoint>>.active(): List<IndexedValue<Loadpoint>> =
     filter { !it.value.disabled }
 
 // ---------------------------------------------------------------------------

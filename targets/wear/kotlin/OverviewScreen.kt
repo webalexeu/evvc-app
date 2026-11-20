@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.ScalingLazyListState
-import androidx.wear.compose.material.ProgressIndicator
+import androidx.wear.compose.material.CircularProgressIndicator
 import kotlin.math.abs
 
 /** Site energy flow: production, consumption, grid, battery. Mirrors
@@ -27,7 +27,7 @@ fun OverviewScreen(
     listState: ScalingLazyListState,
 ) {
     if (site == null && !unreachable) {
-        ProgressIndicator(progress = 0f, modifier = Modifier.fillMaxSize())
+        CircularProgressIndicator(progress = 0f, modifier = Modifier.fillMaxSize())
         return
     }
     if (site == null) {

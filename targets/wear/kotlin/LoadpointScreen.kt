@@ -15,8 +15,8 @@ import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.ScalingLazyListState
 import androidx.wear.compose.foundation.lazy.items
+import androidx.wear.compose.material.CircularProgressIndicator
 import androidx.wear.compose.material.MaterialTheme
-import androidx.wear.compose.material.ProgressIndicator
 import androidx.wear.compose.material.Text
 
 /** One loadpoint: vehicle, charge progress/power, status, mode switch. Mirrors
@@ -62,7 +62,7 @@ fun LoadpointScreen(
                     Text(" ${m.unit}", style = MaterialTheme.typography.caption1, color = MaterialTheme.colors.onSurfaceVariant)
                 }
                 if (m.fill != null) {
-                    ProgressIndicator(
+                    CircularProgressIndicator(
                         progress = m.fill.toFloat(),
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                     )

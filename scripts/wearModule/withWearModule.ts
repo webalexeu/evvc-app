@@ -42,7 +42,7 @@ const WEAR = {
   minSdk: 33,
   tiles: "1.4.1",
   protolayout: "1.2.1",
-  composeWear: "1.4.1",
+  composeWear: "1.7.1", // 1.5.0+ for androidx.wear.compose.foundation.pager (HorizontalPager/rememberPagerState)
   composeFoundation: "1.9.1",
   activityCompose: "1.9.3",
   lifecycleCompose: "2.8.7",
